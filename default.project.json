@@ -1,0 +1,43 @@
+{
+	"name": "Ignis",
+	"tree": {
+		"$className": "DataModel",
+		"ReplicatedStorage": {
+			"$path": "src/ReplicatedStorage"
+		},
+		"StarterPlayer": {
+			"StarterPlayerScripts": {
+				"$path": "src/StartPlayerScripts"
+			}
+		},
+		"Workspace": {
+			"$path": "src/Workspace"
+		},
+		"Lighting": {
+			"$path": "src/Lighting",
+			"$properties": {
+				"Ambient": {
+					"Color3": [0.39215, 0.39215, 0.39215]
+				},
+				"Brightness": 1,
+				"ColorShift_Bottom": {
+					"Color3": [0, 0, 0]
+				},
+				"ColorShift_Top": {
+					"Color3": [0.00392, 0.05882, 0.09803]
+				},
+				"EnvironmentDiffuseScale": 0,
+				"EnvironmentSpecularScale": 0.05,
+				"GlobalShadows": true,
+				"OutdoorAmbient": {
+					"Color3": [0.39215, 0.39215, 0.39215]
+				},
+				"ShadowSoftness": 0.5,
+				"Technology": "Future",
+				"ClockTime": 12,
+				"GeographicLatitude": 20,
+				"TimeOfDay": "12:00:00"
+			}
+		}
+	}
+}
