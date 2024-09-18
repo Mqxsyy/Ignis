@@ -9,23 +9,23 @@ export type Position = typeof(setmetatable({}, Position))
 function Position.New()
 	local self = setmetatable({}, Position)
 
-	self.method = ComponentMethods.SET
-	self.position = Vector3.zero
+	self._method = ComponentMethods.SET
+	self._position = Vector3.zero
 
 	return self
 end
 
 function Position.Method(self: Position, method: ComponentMethods.ComponentMethods)
-	self.method = method
+	self._method = method
 	return self
 end
 
 function Position.Position(self: Position, position: Vector3)
-	self.position = Vector3
+	self._position = Vector3
 	return self
 end
 
-function Position._Update(self: Position, time: number, particle: BasePart, props: {})
+function Position._Update(self: Position, particle: BasePart, props: {})
 	if self.method == ComponentMethods.SET then
 		props["Position"] = self.position
 	elseif self.method == ComponentMethods.UPDATE then
