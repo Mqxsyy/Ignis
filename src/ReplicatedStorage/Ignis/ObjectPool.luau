@@ -18,7 +18,7 @@ function ObjectPool.GetItem(objectPool: ObjectPool)
 	local size = #objectPool.standbyItems
 
 	if size == 0 then
-		return objectPool.object.Clone()
+		return objectPool.object:Clone()
 	end
 
 	local instance = table.remove(objectPool.standbyItems, #objectPool.standbyItems)
