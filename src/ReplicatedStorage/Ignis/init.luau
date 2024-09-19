@@ -1,8 +1,8 @@
 local Ignis = table.freeze({
-	ParticleSystem = require(script.ParticleSystem),
-	Components = require(script.Components),
+	ParticleSystem = require(script:WaitForChild("ParticleSystem")),
+	Components = require(script:WaitForChild("Components")),
 	Enums = {
-		ComponentMethods = require(script.Enums.ComponentMethods),
+		ComponentMethods = require(script:WaitForChild("Enums"):WaitForChild("ComponentMethods")),
 	},
 })
 
