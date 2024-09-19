@@ -7,7 +7,7 @@
 		},
 		"StarterPlayer": {
 			"StarterPlayerScripts": {
-				"$path": "src/StartPlayerScripts"
+				"$path": "src/StarterPlayerScripts"
 			}
 		},
 		"Workspace": {
