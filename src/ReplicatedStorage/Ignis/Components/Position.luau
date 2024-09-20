@@ -29,10 +29,8 @@ end
 
 local function Update(self: Position, step: number, particleData: ParticleData.ParticleData, props: {})
 	if self._p.method == Methods.SET then
-		print("SET")
 		props["Position"] = self._p.position
 	elseif self._p.method == Methods.UPDATE then
-		print("UPD")
 		if props["Position"] then
 			props["Position"] += self._p.position * step
 		else
