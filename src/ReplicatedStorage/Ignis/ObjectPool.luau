@@ -1,6 +1,6 @@
 local ObjectPool = {}
 
-type ObjectPool = {
+export type ObjectPool = {
 	object: Instance,
 	activeItems: { Instance },
 	standbyItems: { Instance },
@@ -12,6 +12,10 @@ function ObjectPool.New(object: Instance): ObjectPool
 		activeItems = {},
 		standbyItems = {},
 	}
+end
+
+function ObjectPool.OverrideObject(objectPool: ObjectPool, object: Instance)
+	objectPool.object = object
 end
 
 function ObjectPool.GetItem(objectPool: ObjectPool)
@@ -35,6 +39,16 @@ function ObjectPool.RemoveItem(objectPool: ObjectPool, instance: Instance)
 
 	table.remove(objectPool.activeItems, index)
 	table.insert(objectPool.standbyItems, instance)
+end
+
+function ObjectPool.Cleanup(objectPool: ObjectPool)
+	for _, object in objectPool.activeItems do
+		object:Destroy()
+	end
+
+	for _, object in objectPool.standbyItems do
+		object:Destroy()
+	end
 end
 
 return ObjectPool

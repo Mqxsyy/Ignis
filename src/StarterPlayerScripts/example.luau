@@ -3,7 +3,9 @@ local Ignis = require(ReplicatedStorage.Ignis)
 
 local ParticleSystem = Ignis.ParticleSystem
 local Components = Ignis.Components
+local Renderers = Ignis.Renderers
 local Enums = Ignis.Enums
 
 local _sys = ParticleSystem.New()
 	:AddComponent(Components.Position:Method(Enums.ComponentMethods.SET):Position(Vector3.zero))
+	:SetRenderer(Renderers.Mesh)

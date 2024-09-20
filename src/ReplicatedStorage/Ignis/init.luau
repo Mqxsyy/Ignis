@@ -1,8 +1,12 @@
+local lists = script.Lists
+local enums = script.Enums
+
 local Ignis = table.freeze({
 	ParticleSystem = require(script:WaitForChild("ParticleSystem")),
-	Components = require(script:WaitForChild("ComponentList")),
+	Components = require(lists:WaitForChild("ComponentList")),
+	Renderers = require(lists:WaitForChild("RendererList")),
 	Enums = {
-		ComponentMethods = require(script:WaitForChild("Enums"):WaitForChild("Methods")),
+		ComponentMethods = require(enums:WaitForChild("Methods")),
 	},
 })
 
