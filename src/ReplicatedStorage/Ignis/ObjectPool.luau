@@ -1,12 +1,25 @@
 local ObjectPool = {}
 
+local standbyLocation = Vector3.new(0, 10000, 0)
+
 export type ObjectPool = {
-	object: Instance,
-	activeItems: { Instance },
-	standbyItems: { Instance },
+	object: BasePart,
+	activeItems: { BasePart },
+	standbyItems: { BasePart },
 }
 
-function ObjectPool.New(object: Instance): ObjectPool
+local function CreateFolder()
+	local folder = Instance.new("Folder")
+	folder.Name = "ObjectPool"
+	folder.Parent = workspace
+
+	return folder
+end
+
+function ObjectPool.New(object: BasePart): ObjectPool
+	object.Position = standbyLocation
+	object.Parent = CreateFolder()
+
 	return {
 		object = object,
 		activeItems = {},
@@ -14,7 +27,7 @@ function ObjectPool.New(object: Instance): ObjectPool
 	}
 end
 
-function ObjectPool.OverrideObject(objectPool: ObjectPool, object: Instance)
+function ObjectPool.OverrideObject(objectPool: ObjectPool, object: BasePart)
 	objectPool.object = object
 end
 
@@ -22,7 +35,10 @@ function ObjectPool.GetItem(objectPool: ObjectPool)
 	local size = #objectPool.standbyItems
 
 	if size == 0 then
-		return objectPool.object:Clone()
+		local object = objectPool.object:Clone()
+		object.Parent = objectPool.object.Parent
+
+		return object
 	end
 
 	local instance = table.remove(objectPool.standbyItems, #objectPool.standbyItems)
@@ -31,7 +47,7 @@ function ObjectPool.GetItem(objectPool: ObjectPool)
 	return instance
 end
 
-function ObjectPool.RemoveItem(objectPool: ObjectPool, instance: Instance)
+function ObjectPool.RemoveItem(objectPool: ObjectPool, instance: BasePart)
 	local index = table.find(objectPool, instance)
 	if index == nil then
 		error(`${instance} not found in ObjectPool!`)

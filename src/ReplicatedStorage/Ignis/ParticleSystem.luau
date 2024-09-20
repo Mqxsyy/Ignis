@@ -3,6 +3,7 @@ local RendererList = require(ReplicatedStorage.Ignis.Lists.RendererList)
 local _Component = require(ReplicatedStorage.Ignis.Components._Component)
 local _Renderer = require(ReplicatedStorage.Ignis.Renderers._Renderer)
 local ObjectPool = require(script.Parent.ObjectPool)
+local ParticleData = require(script.Parent.ParticleData)
 
 local ParticleSystem = {}
 
@@ -10,6 +11,7 @@ export type ParticleSystem = {
 	_p: {
 		components: { _Component.Component },
 		objectPool: ObjectPool.ObjectPool,
+		particleData: { ParticleData.ParticleData },
 
 		Step: (self: ParticleSystem, amount: number?) -> (),
 	},
@@ -25,13 +27,31 @@ local function AddComponent(self: ParticleSystem, component: _Component.Componen
 	return self
 end
 
-local function SetRenderer(self: ParticleSystem, renderer: _Renderer.Renderer)
+local function SetRenderer(self: ParticleSystem, renderer: _Renderer.Renderer): ParticleSystem
 	ObjectPool.Cleanup(self._p.objectPool)
 	ObjectPool.OverrideObject(self._p.objectPool, renderer._p.particle)
+	return self
 end
 
-local function Step(self: ParticleSystem, amount: number?)
-	amount = amount or 1
+local function Step(self: ParticleSystem, _amount: number?)
+	local amount = _amount or 1
+
+	for i = 0, amount - 1 do
+		local particleData: ParticleData.ParticleData = {
+			particle = ObjectPool.GetItem(self._p.objectPool),
+		}
+
+		table.insert(self._p.particleData, particleData)
+
+		local props = {}
+		for _, component in self._p.components do
+			component._p.Update(component, i, particleData, props)
+		end
+
+		for k, v in props do
+			particleData.particle[k] = v
+		end
+	end
 end
 
 -- local function Start(self: ParticleSystem) end
@@ -43,6 +63,7 @@ function ParticleSystem.New(): ParticleSystem
 		_p = {
 			components = {},
 			objectPool = ObjectPool.New(RendererList.Mesh._p.particle),
+			particleData = {},
 
 			Step = Step,
 		},
