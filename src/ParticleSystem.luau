@@ -18,17 +18,25 @@ export type ParticleSystem = {
 
 		objectPool: ObjectPool.ObjectPool,
 		particleData: { ParticleData.ParticleData },
-		currentStep: number,
+
 		stepperConnection: RBXScriptConnection?,
+		currentStep: number,
 		runningTime: number,
+
+		isStopping: boolean,
+		isPaused: boolean,
 	},
 
 	SetSpawner: (self: ParticleSystem, spawner: _Spawner.Spawner) -> ParticleSystem,
 	AddInitializer: (self: ParticleSystem, component: _Component.Component) -> ParticleSystem,
 	AddUpdater: (self: ParticleSystem, component: _Component.Component) -> ParticleSystem,
 	SetRenderer: (self: ParticleSystem, renderer: _Renderer.Renderer) -> ParticleSystem,
+
 	Start: (self: ParticleSystem) -> (),
-	-- Stop: (self: ParticleSystem) -> (),
+	Pause: (self: ParticleSystem) -> (),
+	Unpause: (self: ParticleSystem) -> (),
+	Stop: (self: ParticleSystem) -> (),
+	Restart: (self: ParticleSystem) -> (),
 }
 
 local function SetSpawner(self: ParticleSystem, spawner: _Spawner.Spawner)
@@ -52,17 +60,7 @@ local function SetRenderer(self: ParticleSystem, renderer: _Renderer.Renderer): 
 	return self
 end
 
-local function Start(self: ParticleSystem)
-	if RunService:IsServer() then
-		warn("Particle systems should only be used on the client!")
-		return
-	end
-
-	if self._p.stepperConnection then
-		warn("Particle system is already running!")
-		return
-	end
-
+local function _ConnectStepper(self: ParticleSystem)
 	self._p.stepperConnection = RunService.Heartbeat:Connect(function(dt)
 		self._p.runningTime += dt
 
@@ -76,7 +74,72 @@ local function Start(self: ParticleSystem)
 	end)
 end
 
--- local function Stop(self: ParticleSystem) end
+local function Start(self: ParticleSystem)
+	if RunService:IsServer() then
+		warn("Failed to start particle system! Particle systems can only be used on the client!")
+		return
+	end
+
+	if self._p.isPaused then
+		warn("Failed to start particle syetem! Particle system us paused!")
+		return
+	end
+
+	if self._p.isStopping then
+		self._p.isStopping = false
+
+		if not self._p.stepperConnection then
+			_ConnectStepper(self)
+		end
+
+		return
+	end
+
+	if self._p.stepperConnection then
+		warn("Failed to start particle system! Particle system is already running!")
+		return
+	end
+
+	_ConnectStepper(self)
+end
+
+local function Pause(self: ParticleSystem)
+	if not self._p.stepperConnection then
+		warn("Failed to pause particle system! Particle system isn't running!")
+		return
+	end
+
+	self._p.isPaused = true
+
+	self._p.stepperConnection:Disconnect()
+	self._p.stepperConnection = nil
+end
+
+local function Unpause(self: ParticleSystem)
+	if self._p.stepperConnection then
+		warn("Failed to unpause particle system! Particle system is already running!")
+		return
+	end
+
+	self._p.isPaused = false
+	_ConnectStepper(self)
+end
+
+local function Stop(self: ParticleSystem)
+	self._p.isStopping = true
+end
+
+local function Restart(self: ParticleSystem)
+	if self._p.stepperConnection then
+		self._p.stepperConnection:Disconnect()
+		self._p.stepperConnection = nil
+	end
+
+	self._p.runningTime = 0
+	self._p.currentStep = 0
+
+	Start(self)
+end
 
 function ParticleSystem.New(): ParticleSystem
 	local self: ParticleSystem = {
@@ -87,9 +150,13 @@ function ParticleSystem.New(): ParticleSystem
 
 			objectPool = ObjectPool.New(RendererList.Mesh.New()._p.particle),
 			particleData = {},
-			currentStep = 0,
+
 			stepperConnection = nil,
+			currentStep = 0,
 			runningTime = 0,
+
+			isStopping = false,
+			isPaused = false,
 		},
 
 		SetSpawner = SetSpawner,
@@ -98,7 +165,10 @@ function ParticleSystem.New(): ParticleSystem
 		SetRenderer = SetRenderer,
 
 		Start = Start,
-		-- Stop = Stop,
+		Pause = Pause,
+		Unpause = Unpause,
+		Stop = Stop,
+		Restart = Restart,
 	}
 
 	return self
@@ -119,6 +189,21 @@ function ParticleSystem.Step(self: ParticleSystem, steps: number)
 
 			table.insert(bulkMoveToParts, particleData.particle)
 			table.insert(bulkMoveToCFrames, ObjectPool.standbyLocation)
+
+			if not self._p.isStopping then
+				continue
+			end
+
+			if #self._p.particleData > 0 then
+				continue
+			end
+
+			if not self._p.stepperConnection then
+				continue
+			end
+
+			self._p.stepperConnection:Disconnect()
+			self._p.stepperConnection = nil
 			continue
 		end
 
@@ -139,39 +224,41 @@ function ParticleSystem.Step(self: ParticleSystem, steps: number)
 	end
 
 	-- Create New Particles
-	for i = 1, steps do
-		local newCount = self._p.spawner._p.CalculateSpawnCountOnFrame(self._p.spawner, self._p.currentStep + steps)
+	if not self._p.isStopping then
+		for i = 1, steps do
+			local newCount = self._p.spawner._p.CalculateSpawnCountOnFrame(self._p.spawner, self._p.currentStep + steps)
 
-		for _ = 1, newCount do
-			local particleData: ParticleData.ParticleData = {
-				particle = ObjectPool.GetItem(self._p.objectPool),
-				lifetime = 60,
-				aliveFrames = 0,
-			}
+			for _ = 1, newCount do
+				local particleData: ParticleData.ParticleData = {
+					particle = ObjectPool.GetItem(self._p.objectPool),
+					lifetime = 60,
+					aliveFrames = 0,
+				}
 
-			if steps > particleData.lifetime then
-				continue
-			end
-
-			table.insert(self._p.particleData, particleData)
-
-			local props = {}
-			for _, component in self._p.initializers do
-				component._p.Update(component, 0, particleData, props)
-			end
-
-			for _, component in self._p.updaters do
-				component._p.Update(component, i - 1, particleData, props)
-			end
-
-			for k, v in props do
-				if k == "CFrame" then
-					table.insert(bulkMoveToParts, particleData.particle)
-					table.insert(bulkMoveToCFrames, v)
+				if steps > particleData.lifetime then
 					continue
 				end
 
-				particleData.particle[k] = v
+				table.insert(self._p.particleData, particleData)
+
+				local props = {}
+				for _, component in self._p.initializers do
+					component._p.Update(component, 0, particleData, props)
+				end
+
+				for _, component in self._p.updaters do
+					component._p.Update(component, i - 1, particleData, props)
+				end
+
+				for k, v in props do
+					if k == "CFrame" then
+						table.insert(bulkMoveToParts, particleData.particle)
+						table.insert(bulkMoveToCFrames, v)
+						continue
+					end
+
+					particleData.particle[k] = v
+				end
 			end
 		end
 	end
