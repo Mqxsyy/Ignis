@@ -1,7 +1,6 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Methods = require(script.Parent.Parent.Enums.Methods)
+local ParticleData = require(script.Parent.Parent.ParticleData)
 local _Component = require(script.Parent._Component)
-local Methods = require(ReplicatedStorage.Ignis.Enums.Methods)
-local ParticleData = require(ReplicatedStorage.Ignis.ParticleData)
 
 local Position = {}
 

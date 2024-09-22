@@ -1,5 +1,4 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ParticleData = require(ReplicatedStorage.Ignis.ParticleData)
+local ParticleData = require(script.Parent.Parent.ParticleData)
 
 export type Component = {
 	_p: {

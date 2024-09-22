@@ -1,9 +1,8 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RendererList = require(ReplicatedStorage.Ignis.Lists.RendererList)
-local _Component = require(ReplicatedStorage.Ignis.Components._Component)
-local _Renderer = require(ReplicatedStorage.Ignis.Renderers._Renderer)
+local _Component = require(script.Parent.Components._Component)
+local RendererList = require(script.Parent.Lists.RendererList)
 local ObjectPool = require(script.Parent.ObjectPool)
 local ParticleData = require(script.Parent.ParticleData)
+local _Renderer = require(script.Parent.Renderers._Renderer)
 
 local ParticleSystem = {}
 
