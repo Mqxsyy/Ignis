@@ -263,7 +263,7 @@ function ParticleSystem.Step(self: ParticleSystem, steps: number)
 		end
 	end
 
-	workspace:BulkMoveTo(bulkMoveToParts, bulkMoveToCFrames)
+	workspace:BulkMoveTo(bulkMoveToParts, bulkMoveToCFrames, Enum.BulkMoveMode.FireCFrameChanged)
 end
 
 return ParticleSystem
