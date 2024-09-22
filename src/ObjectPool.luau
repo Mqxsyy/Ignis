@@ -1,9 +1,10 @@
 local ObjectPool = {}
 
-local standbyLocation = Vector3.new(0, 10000, 0)
+ObjectPool.standbyLocation = CFrame.new(0, 10000, 0)
 
 export type ObjectPool = {
 	object: BasePart,
+	folder: Folder,
 	activeItems: { BasePart },
 	standbyItems: { BasePart },
 }
@@ -17,11 +18,14 @@ local function CreateFolder()
 end
 
 function ObjectPool.New(object: BasePart): ObjectPool
-	object.Position = standbyLocation
-	object.Parent = CreateFolder()
+	object.CFrame = ObjectPool.standbyLocation
+
+	local folder = CreateFolder()
+	object.Parent = folder
 
 	return {
 		object = object,
+		folder = folder,
 		activeItems = {},
 		standbyItems = {},
 	}
@@ -29,6 +33,8 @@ end
 
 function ObjectPool.OverrideObject(objectPool: ObjectPool, object: BasePart)
 	objectPool.object = object
+	object.CFrame = ObjectPool.standbyLocation
+	object.Parent = objectPool.folder
 end
 
 function ObjectPool.GetItem(objectPool: ObjectPool)
@@ -38,6 +44,7 @@ function ObjectPool.GetItem(objectPool: ObjectPool)
 		local object = objectPool.object:Clone()
 		object.Parent = objectPool.object.Parent
 
+		table.insert(objectPool.activeItems, object)
 		return object
 	end
 
@@ -48,9 +55,9 @@ function ObjectPool.GetItem(objectPool: ObjectPool)
 end
 
 function ObjectPool.RemoveItem(objectPool: ObjectPool, instance: BasePart)
-	local index = table.find(objectPool, instance)
+	local index = table.find(objectPool.activeItems, instance)
 	if index == nil then
-		error(`${instance} not found in ObjectPool!`)
+		error(`{instance} not found in ObjectPool!`)
 	end
 
 	table.remove(objectPool.activeItems, index)

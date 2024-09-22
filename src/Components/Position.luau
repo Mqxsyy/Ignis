@@ -9,7 +9,7 @@ export type Position = {
 		method: Methods.Methods,
 		position: Vector3,
 
-		Update: (self: Position, step: number, particleData: ParticleData.ParticleData, props: {}) -> (),
+		Update: (self: Position, steps: number, particleData: ParticleData.ParticleData, props: {}) -> (),
 	},
 
 	Method: (self: Position, method: Methods.Methods) -> Position,
@@ -26,14 +26,14 @@ local function SetPosition(self: Position, position: Vector3)
 	return self
 end
 
-local function Update(self: Position, step: number, particleData: ParticleData.ParticleData, props: {})
+local function Update(self: Position, steps: number, particleData: ParticleData.ParticleData, props: {})
 	if self._p.method == Methods.SET then
 		props["Position"] = self._p.position
 	elseif self._p.method == Methods.UPDATE then
 		if props["Position"] then
-			props["Position"] += self._p.position * step
+			props["Position"] += self._p.position * steps
 		else
-			props["Position"] = particleData.particle.Position + self._p.position * step
+			props["Position"] = particleData.particle.Position + self._p.position * steps
 		end
 	end
 end

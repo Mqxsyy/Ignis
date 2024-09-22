@@ -9,7 +9,7 @@ local Enums = Ignis.Enums
 
 local _sys = ParticleSystem.New()
 	:SetSpawner(Spawners.Constant.New():Rate(6))
-	:AddComponent(Components.Position.New():Method(Enums.ComponentMethods.SET):Position(Vector3.new(0, 5, 0)))
-	:AddComponent(Components.Position.New():Method(Enums.ComponentMethods.UPDATE):Position(Vector3.new(0, 2, 0)))
+	:AddInitializer(Components.Position.New():Method(Enums.ComponentMethods.SET):Position(Vector3.new(0, 5, 0)))
+	:AddUpdater(Components.Position.New():Method(Enums.ComponentMethods.UPDATE):Position(Vector3.new(0, 0.5, 0)))
 	:SetRenderer(Renderers.Mesh.New())
 	:Start()

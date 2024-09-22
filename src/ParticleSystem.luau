@@ -13,7 +13,9 @@ local ParticleSystem = {}
 export type ParticleSystem = {
 	_p: {
 		spawner: _Spawner.Spawner,
-		components: { _Component.Component },
+		initializers: { _Component.Component },
+		updaters: { _Component.Component },
+
 		objectPool: ObjectPool.ObjectPool,
 		particleData: { ParticleData.ParticleData },
 		currentStep: number,
@@ -22,7 +24,8 @@ export type ParticleSystem = {
 	},
 
 	SetSpawner: (self: ParticleSystem, spawner: _Spawner.Spawner) -> ParticleSystem,
-	AddComponent: (self: ParticleSystem, component: _Component.Component) -> ParticleSystem,
+	AddInitializer: (self: ParticleSystem, component: _Component.Component) -> ParticleSystem,
+	AddUpdater: (self: ParticleSystem, component: _Component.Component) -> ParticleSystem,
 	SetRenderer: (self: ParticleSystem, renderer: _Renderer.Renderer) -> ParticleSystem,
 	Start: (self: ParticleSystem) -> (),
 	-- Stop: (self: ParticleSystem) -> (),
@@ -33,8 +36,13 @@ local function SetSpawner(self: ParticleSystem, spawner: _Spawner.Spawner)
 	return self
 end
 
-local function AddComponent(self: ParticleSystem, component: _Component.Component): ParticleSystem
-	table.insert(self._p.components, component)
+local function AddInitializer(self: ParticleSystem, component: _Component.Component): ParticleSystem
+	table.insert(self._p.initializers, component)
+	return self
+end
+
+local function AddUpdater(self: ParticleSystem, component: _Component.Component): ParticleSystem
+	table.insert(self._p.updaters, component)
 	return self
 end
 
@@ -74,7 +82,9 @@ function ParticleSystem.New(): ParticleSystem
 	local self: ParticleSystem = {
 		_p = {
 			spawner = Constant.New(),
-			components = {},
+			initializers = {},
+			updaters = {},
+
 			objectPool = ObjectPool.New(RendererList.Mesh.New()._p.particle),
 			particleData = {},
 			currentStep = 0,
@@ -83,7 +93,8 @@ function ParticleSystem.New(): ParticleSystem
 		},
 
 		SetSpawner = SetSpawner,
-		AddComponent = AddComponent,
+		AddInitializer = AddInitializer,
+		AddUpdater = AddUpdater,
 		SetRenderer = SetRenderer,
 
 		Start = Start,
@@ -94,26 +105,78 @@ function ParticleSystem.New(): ParticleSystem
 end
 
 function ParticleSystem.Step(self: ParticleSystem, steps: number)
-	local newParticles = self._p.spawner._p.CalculateSpawnCountOnFrame(self._p.spawner, self._p.currentStep + steps)
-	print(newParticles)
-	-- for i = 0, amount - 1 do
-	-- 	local particleData: ParticleData.ParticleData = {
-	-- 		particle = ObjectPool.GetItem(self._p.objectPool),
-	-- 		lifetime = 60,
-	-- 		aliveFrames = 0,
-	-- 	}
-	--
-	-- 	table.insert(self._p.particleData, particleData)
-	--
-	-- 	local props = {}
-	-- 	for _, component in self._p.components do
-	-- 		component._p.Update(component, i, particleData, props)
-	-- 	end
-	--
-	-- 	for k, v in props do
-	-- 		particleData.particle[k] = v
-	-- 	end
-	-- end
+	local bulkMoveToParts = {}
+	local bulkMoveToCFrames = {}
+
+	-- Update Existing Particles
+	for i = #self._p.particleData, 1, -1 do
+		local particleData = self._p.particleData[i]
+		particleData.aliveFrames += steps
+
+		if particleData.aliveFrames > particleData.lifetime then
+			ObjectPool.RemoveItem(self._p.objectPool, particleData.particle)
+			table.remove(self._p.particleData, i)
+
+			table.insert(bulkMoveToParts, particleData.particle)
+			table.insert(bulkMoveToCFrames, ObjectPool.standbyLocation)
+			continue
+		end
+
+		local props = {}
+		for _, component in self._p.updaters do
+			component._p.Update(component, steps, particleData, props)
+		end
+
+		for k, v in props do
+			if k == "CFrame" then
+				table.insert(bulkMoveToParts, particleData.particle)
+				table.insert(bulkMoveToCFrames, v)
+				continue
+			end
+
+			particleData.particle[k] = v
+		end
+	end
+
+	-- Create New Particles
+	for i = 1, steps do
+		local newCount = self._p.spawner._p.CalculateSpawnCountOnFrame(self._p.spawner, self._p.currentStep + steps)
+
+		for _ = 1, newCount do
+			local particleData: ParticleData.ParticleData = {
+				particle = ObjectPool.GetItem(self._p.objectPool),
+				lifetime = 60,
+				aliveFrames = 0,
+			}
+
+			if steps > particleData.lifetime then
+				continue
+			end
+
+			table.insert(self._p.particleData, particleData)
+
+			local props = {}
+			for _, component in self._p.initializers do
+				component._p.Update(component, 0, particleData, props)
+			end
+
+			for _, component in self._p.updaters do
+				component._p.Update(component, i - 1, particleData, props)
+			end
+
+			for k, v in props do
+				if k == "CFrame" then
+					table.insert(bulkMoveToParts, particleData.particle)
+					table.insert(bulkMoveToCFrames, v)
+					continue
+				end
+
+				particleData.particle[k] = v
+			end
+		end
+	end
+
+	workspace:BulkMoveTo(bulkMoveToParts, bulkMoveToCFrames)
 end
 
 return ParticleSystem
