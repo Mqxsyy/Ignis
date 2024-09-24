@@ -1,12 +1,10 @@
-local Mesh = {}
+local Renderer = require(script.Parent.Parent.Renderer)
 
-export type Mesh = {
-	_p: {
-		particle: MeshPart,
-	},
-}
+export type Props = {}
 
-function Mesh.New(): Mesh
+export type Self = Renderer.Renderer
+
+return function(props: Props): Self
 	local particle = Instance.new("MeshPart")
 	particle.Anchored = true
 	particle.Size = Vector3.one
@@ -14,13 +12,7 @@ function Mesh.New(): Mesh
 	particle.CanQuery = false
 	particle.CanTouch = false
 
-	local self: Mesh = {
-		_p = {
-			particle = particle,
-		},
+	return {
+		particle = particle,
 	}
-
-	return self
 end
-
-return Mesh

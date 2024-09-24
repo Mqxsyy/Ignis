@@ -1,36 +1,29 @@
 local RunService = game:GetService("RunService")
-local _Component = require(script.Parent.Components._Component)
 local Config = require(script.Parent.Config)
-local RendererList = require(script.Parent.Lists.RendererList)
+local NodeType = require(script.Parent.Enums.NodeType)
+local Component = require(script.Parent.Nodes.Component)
+local Mesh = require(script.Parent.Nodes.Renderers.Mesh)
+local Spawner = require(script.Parent.Nodes.Spawner)
+local Constant = require(script.Parent.Nodes.Spawners.Constant)
 local ObjectPool = require(script.Parent.ObjectPool)
 local ParticleData = require(script.Parent.ParticleData)
-local _Renderer = require(script.Parent.Renderers._Renderer)
-local Constant = require(script.Parent.Spawners.Constant)
-local _Spawner = require(script.Parent.Spawners._Spawner)
 
 local ParticleSystem = {}
 
 export type ParticleSystem = {
-	_p: {
-		spawner: _Spawner.Spawner,
-		initializers: { _Component.Component },
-		updaters: { _Component.Component },
+	spawner: Spawner.Spawner,
+	initializers: { Component.Component },
+	updaters: { Component.Component },
 
-		objectPool: ObjectPool.ObjectPool,
-		particleData: { ParticleData.ParticleData },
+	objectPool: ObjectPool.ObjectPool,
+	particleData: { ParticleData.ParticleData },
 
-		stepperConnection: RBXScriptConnection?,
-		currentStep: number,
-		runningTime: number,
+	stepperConnection: RBXScriptConnection?,
+	currentStep: number,
+	runningTime: number,
 
-		isStopping: boolean,
-		isPaused: boolean,
-	},
-
-	SetSpawner: (self: ParticleSystem, spawner: _Spawner.Spawner) -> ParticleSystem,
-	AddInitializer: (self: ParticleSystem, component: _Component.Component) -> ParticleSystem,
-	AddUpdater: (self: ParticleSystem, component: _Component.Component) -> ParticleSystem,
-	SetRenderer: (self: ParticleSystem, renderer: _Renderer.Renderer) -> ParticleSystem,
+	isStopping: boolean,
+	isPaused: boolean,
 
 	Start: (self: ParticleSystem) -> (),
 	Pause: (self: ParticleSystem) -> (),
@@ -39,37 +32,16 @@ export type ParticleSystem = {
 	Restart: (self: ParticleSystem) -> (),
 }
 
-local function SetSpawner(self: ParticleSystem, spawner: _Spawner.Spawner)
-	self._p.spawner = spawner
-	return self
-end
-
-local function AddInitializer(self: ParticleSystem, component: _Component.Component): ParticleSystem
-	table.insert(self._p.initializers, component)
-	return self
-end
-
-local function AddUpdater(self: ParticleSystem, component: _Component.Component): ParticleSystem
-	table.insert(self._p.updaters, component)
-	return self
-end
-
-local function SetRenderer(self: ParticleSystem, renderer: _Renderer.Renderer): ParticleSystem
-	ObjectPool.Cleanup(self._p.objectPool)
-	ObjectPool.OverrideObject(self._p.objectPool, renderer._p.particle)
-	return self
-end
-
 local function _ConnectStepper(self: ParticleSystem)
-	self._p.stepperConnection = RunService.Heartbeat:Connect(function(dt)
-		self._p.runningTime += dt
+	self.stepperConnection = RunService.Heartbeat:Connect(function(dt)
+		self.runningTime += dt
 
-		local currentstep = math.floor(self._p.runningTime / Config.frametime)
-		local delta = currentstep - self._p.currentStep
+		local currentstep = math.floor(self.runningTime / Config.frametime)
+		local delta = currentstep - self.currentStep
 
 		if delta > 0 then
 			ParticleSystem.Step(self, delta)
-			self._p.currentStep = currentstep
+			self.currentStep = currentstep
 		end
 	end)
 end
@@ -80,22 +52,22 @@ local function Start(self: ParticleSystem)
 		return
 	end
 
-	if self._p.isPaused then
+	if self.isPaused then
 		warn("Failed to start particle syetem! Particle system us paused!")
 		return
 	end
 
-	if self._p.isStopping then
-		self._p.isStopping = false
+	if self.isStopping then
+		self.isStopping = false
 
-		if not self._p.stepperConnection then
+		if not self.stepperConnection then
 			_ConnectStepper(self)
 		end
 
 		return
 	end
 
-	if self._p.stepperConnection then
+	if self.stepperConnection then
 		warn("Failed to start particle system! Particle system is already running!")
 		return
 	end
@@ -104,65 +76,58 @@ local function Start(self: ParticleSystem)
 end
 
 local function Pause(self: ParticleSystem)
-	if not self._p.stepperConnection then
+	if not self.stepperConnection then
 		warn("Failed to pause particle system! Particle system isn't running!")
 		return
 	end
 
-	self._p.isPaused = true
+	self.isPaused = true
 
-	self._p.stepperConnection:Disconnect()
-	self._p.stepperConnection = nil
+	self.stepperConnection:Disconnect()
+	self.stepperConnection = nil
 end
 
 local function Unpause(self: ParticleSystem)
-	if self._p.stepperConnection then
+	if self.stepperConnection then
 		warn("Failed to unpause particle system! Particle system is already running!")
 		return
 	end
 
-	self._p.isPaused = false
+	self.isPaused = false
 	_ConnectStepper(self)
 end
 
 local function Stop(self: ParticleSystem)
-	self._p.isStopping = true
+	self.isStopping = true
 end
 
 local function Restart(self: ParticleSystem)
-	if self._p.stepperConnection then
-		self._p.stepperConnection:Disconnect()
-		self._p.stepperConnection = nil
+	if self.stepperConnection then
+		self.stepperConnection:Disconnect()
+		self.stepperConnection = nil
 	end
 
-	self._p.runningTime = 0
-	self._p.currentStep = 0
+	self.runningTime = 0
+	self.currentStep = 0
 
 	Start(self)
 end
 
-function ParticleSystem.New(): ParticleSystem
+function ParticleSystem.New(props: { [unknown]: unknown }): ParticleSystem
 	local self: ParticleSystem = {
-		_p = {
-			spawner = Constant.New(),
-			initializers = {},
-			updaters = {},
+		spawner = Constant {},
+		initializers = {},
+		updaters = {},
 
-			objectPool = ObjectPool.New(RendererList.Mesh.New()._p.particle),
-			particleData = {},
+		objectPool = ObjectPool.New(Mesh {}.particle),
+		particleData = {},
 
-			stepperConnection = nil,
-			currentStep = 0,
-			runningTime = 0,
+		stepperConnection = nil,
+		currentStep = 0,
+		runningTime = 0,
 
-			isStopping = false,
-			isPaused = false,
-		},
-
-		SetSpawner = SetSpawner,
-		AddInitializer = AddInitializer,
-		AddUpdater = AddUpdater,
-		SetRenderer = SetRenderer,
+		isStopping = false,
+		isPaused = false,
 
 		Start = Start,
 		Pause = Pause,
@@ -170,6 +135,21 @@ function ParticleSystem.New(): ParticleSystem
 		Stop = Stop,
 		Restart = Restart,
 	}
+
+	for _, prop in props do
+		if typeof(prop) == "table" then
+			if prop.nodeType == NodeType.Spawn then
+				self.spawner = prop
+			elseif prop.nodeType == NodeType.Initialize then
+				table.insert(self.initializers, prop)
+			elseif prop.nodeType == NodeType.Update then
+				table.insert(self.updaters, prop)
+			elseif prop.nodeType == NodeType.Render then
+				ObjectPool.Cleanup(self.objectPool)
+				ObjectPool.OverrideObject(self.objectPool, prop.particle)
+			end
+		end
+	end
 
 	return self
 end
@@ -179,37 +159,37 @@ function ParticleSystem.Step(self: ParticleSystem, steps: number)
 	local bulkMoveToCFrames = {}
 
 	-- Update Existing Particles
-	for i = #self._p.particleData, 1, -1 do
-		local particleData = self._p.particleData[i]
+	for i = #self.particleData, 1, -1 do
+		local particleData = self.particleData[i]
 		particleData.aliveFrames += steps
 
 		if particleData.aliveFrames > particleData.lifetime then
-			ObjectPool.RemoveItem(self._p.objectPool, particleData.particle)
-			table.remove(self._p.particleData, i)
+			ObjectPool.RemoveItem(self.objectPool, particleData.particle)
+			table.remove(self.particleData, i)
 
 			table.insert(bulkMoveToParts, particleData.particle)
 			table.insert(bulkMoveToCFrames, ObjectPool.standbyLocation)
 
-			if not self._p.isStopping then
+			if not self.isStopping then
 				continue
 			end
 
-			if #self._p.particleData > 0 then
+			if #self.particleData > 0 then
 				continue
 			end
 
-			if not self._p.stepperConnection then
+			if not self.stepperConnection then
 				continue
 			end
 
-			self._p.stepperConnection:Disconnect()
-			self._p.stepperConnection = nil
+			self.stepperConnection:Disconnect()
+			self.stepperConnection = nil
 			continue
 		end
 
 		local props = {}
-		for _, component in self._p.updaters do
-			component._p.Update(component, steps, particleData, props)
+		for _, component in self.updaters do
+			component.Step(component, steps, particleData, props)
 		end
 
 		for k, v in props do
@@ -224,13 +204,13 @@ function ParticleSystem.Step(self: ParticleSystem, steps: number)
 	end
 
 	-- Create New Particles
-	if not self._p.isStopping then
+	if not self.isStopping then
 		for i = 1, steps do
-			local newCount = self._p.spawner._p.CalculateSpawnCountOnFrame(self._p.spawner, self._p.currentStep + steps)
+			local newCount = self.spawner.CalculateSpawnCountOnFrame(self.spawner, self.currentStep + steps)
 
 			for _ = 1, newCount do
 				local particleData: ParticleData.ParticleData = {
-					particle = ObjectPool.GetItem(self._p.objectPool),
+					particle = ObjectPool.GetItem(self.objectPool),
 					lifetime = 60,
 					aliveFrames = 0,
 				}
@@ -239,15 +219,15 @@ function ParticleSystem.Step(self: ParticleSystem, steps: number)
 					continue
 				end
 
-				table.insert(self._p.particleData, particleData)
+				table.insert(self.particleData, particleData)
 
 				local props = {}
-				for _, component in self._p.initializers do
-					component._p.Update(component, 0, particleData, props)
+				for _, component in self.initializers do
+					component.Step(component, 0, particleData, props)
 				end
 
-				for _, component in self._p.updaters do
-					component._p.Update(component, i - 1, particleData, props)
+				for _, component in self.updaters do
+					component.Step(component, i - 1, particleData, props)
 				end
 
 				for k, v in props do

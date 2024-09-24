@@ -1,13 +1,20 @@
-local lists = script.Lists
-local enums = script.Enums
+local Method = require(script.Enums.Method)
+local ParticleSystem = require(script.ParticleSystem)
+local AddInitializer = require(script.ParticleSystemBuilder.AddInitializer)
+local AddUpdater = require(script.ParticleSystemBuilder.AddUpdater)
+local SetRenderer = require(script.ParticleSystemBuilder.SetRenderer)
+local SetSpawner = require(script.ParticleSystemBuilder.SetSpawner)
 
 local Ignis = table.freeze({
-	ParticleSystem = require(script.ParticleSystem),
-	Spawners = require(lists.SpawnerList),
-	Components = require(lists.ComponentList),
-	Renderers = require(lists.RendererList),
+	ParticleSystem = ParticleSystem.New,
+
+	SetSpawner = SetSpawner,
+	AddInitializer = AddInitializer,
+	AddUpdater = AddUpdater,
+	SetRenderer = SetRenderer,
+
 	Enums = {
-		ComponentMethods = require(enums.Methods),
+		Method = Method,
 	},
 })
 
