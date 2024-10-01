@@ -1,11 +1,11 @@
-local NodeType = require(script.Parent.Parent.Enums.NodeType)
-local Renderer = require(script.Parent.Parent.Nodes.Renderer)
+local Enums = require(script.Parent.Parent.Enums)
 local Mesh = require(script.Parent.Parent.Nodes.Renderers.Mesh)
+local Types = require(script.Parent.Parent.Types)
 
 type RendererNode = "Mesh"
 
 type Renderers = {
-	[RendererNode]: (props: { unknown }) -> Renderer.Renderer,
+	[RendererNode]: (props: { unknown }) -> Types.Renderer,
 }
 
 local renderers: Renderers = {
@@ -15,7 +15,7 @@ local renderers: Renderers = {
 return function(renderer: RendererNode)
 	return function(props: { unknown })
 		local node = renderers[renderer](props)
-		node.nodeType = NodeType.Render
+		node.nodeType = Enums.NodeType.Render
 
 		return node
 	end

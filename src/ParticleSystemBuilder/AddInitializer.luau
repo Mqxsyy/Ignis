@@ -1,11 +1,11 @@
-local NodeType = require(script.Parent.Parent.Enums.NodeType)
-local Component = require(script.Parent.Parent.Nodes.Component)
+local Enums = require(script.Parent.Parent.Enums)
 local Position = require(script.Parent.Parent.Nodes.Mixed.Position)
+local Types = require(script.Parent.Parent.Types)
 
 type InitializerNode = "Position"
 
 type Initializers = {
-	[InitializerNode]: (props: { unknown }) -> Component.Component,
+	[InitializerNode]: (props: { unknown }) -> Types.Component,
 }
 
 local initializers: Initializers = {
@@ -15,7 +15,7 @@ local initializers: Initializers = {
 return function(initializer: InitializerNode)
 	return function(props: { unknown })
 		local node = initializers[initializer](props)
-		node.nodeType = NodeType.Initialize
+		node.nodeType = Enums.NodeType.Initialize
 
 		return node
 	end

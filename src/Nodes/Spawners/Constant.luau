@@ -1,10 +1,10 @@
-local Spawner = require(script.Parent.Parent.Spawner)
+local Types = require(script.Parent.Parent.Parent.Types)
 
 type Props = {
 	rate: number?,
 }
 
-type Self = Spawner.Spawner & {
+type Self = Types.Spawner & {
 	rate: number,
 }
 

@@ -1,13 +1,8 @@
+local Types = require(script.Parent.Types)
+
 local ObjectPool = {}
 
 ObjectPool.standbyLocation = CFrame.new(0, 10000, 0)
-
-export type ObjectPool = {
-	object: BasePart,
-	folder: Folder,
-	activeItems: { BasePart },
-	standbyItems: { BasePart },
-}
 
 local function CreateFolder()
 	local folder = Instance.new("Folder")
@@ -17,7 +12,7 @@ local function CreateFolder()
 	return folder
 end
 
-function ObjectPool.New(object: BasePart): ObjectPool
+function ObjectPool.New(object: BasePart): Types.ObjectPool
 	object.CFrame = ObjectPool.standbyLocation
 
 	local folder = CreateFolder()
@@ -31,13 +26,13 @@ function ObjectPool.New(object: BasePart): ObjectPool
 	}
 end
 
-function ObjectPool.OverrideObject(objectPool: ObjectPool, object: BasePart)
+function ObjectPool.OverrideObject(objectPool: Types.ObjectPool, object: BasePart)
 	objectPool.object = object
 	object.CFrame = ObjectPool.standbyLocation
 	object.Parent = objectPool.folder
 end
 
-function ObjectPool.GetItem(objectPool: ObjectPool)
+function ObjectPool.GetItem(objectPool: Types.ObjectPool)
 	local size = #objectPool.standbyItems
 
 	if size == 0 then
@@ -54,7 +49,7 @@ function ObjectPool.GetItem(objectPool: ObjectPool)
 	return instance
 end
 
-function ObjectPool.RemoveItem(objectPool: ObjectPool, instance: BasePart)
+function ObjectPool.RemoveItem(objectPool: Types.ObjectPool, instance: BasePart)
 	local index = table.find(objectPool.activeItems, instance)
 	if index == nil then
 		error(`{instance} not found in ObjectPool!`)
@@ -64,7 +59,7 @@ function ObjectPool.RemoveItem(objectPool: ObjectPool, instance: BasePart)
 	table.insert(objectPool.standbyItems, instance)
 end
 
-function ObjectPool.Cleanup(objectPool: ObjectPool)
+function ObjectPool.Cleanup(objectPool: Types.ObjectPool)
 	for _, object in objectPool.activeItems do
 		object:Destroy()
 	end

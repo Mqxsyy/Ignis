@@ -1,8 +1,8 @@
-local Renderer = require(script.Parent.Parent.Renderer)
+local Types = require(script.Parent.Parent.Parent.Types)
 
 export type Props = {}
 
-export type Self = Renderer.Renderer
+export type Self = Types.Renderer
 
 return function(props: Props): Self
 	local particle = Instance.new("MeshPart")
