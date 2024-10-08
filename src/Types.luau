@@ -8,8 +8,7 @@ export type ObjectPool = {
 }
 
 export type ParticleData = {
-	serialSystemId: number?,
-	parallelSystemId: number?,
+	serialSystem: ParticleSystem?,
 
 	particle: BasePart,
 	lifetime: number, -- Frames
@@ -33,7 +32,6 @@ export type Renderer = Node & {
 }
 
 export type ParticleSystem = {
-	id: number,
 	runParallel: boolean,
 
 	spawner: Spawner,
@@ -43,6 +41,7 @@ export type ParticleSystem = {
 	particleCount: number,
 	objectPool: ObjectPool,
 
+    stepDelta: number,
 	currentStep: number,
 	runningTime: number,
 
@@ -50,11 +49,11 @@ export type ParticleSystem = {
 	isStopping: boolean,
 	isPaused: boolean,
 
-	-- Start: (self: ParticleSystem) -> (),
-	-- Pause: (self: ParticleSystem) -> (),
-	-- Unpause: (self: ParticleSystem) -> (),
-	-- Stop: (self: ParticleSystem) -> (),
-	-- Restart: (self: ParticleSystem) -> (),
+	Start: (self: ParticleSystem) -> (),
+	Pause: (self: ParticleSystem) -> (),
+	Unpause: (self: ParticleSystem) -> (),
+	Stop: (self: ParticleSystem) -> (),
+	Restart: (self: ParticleSystem) -> (),
 }
 
 return nil
