@@ -38,7 +38,6 @@ export type ParticleSystem = {
 	initializers: { Component },
 	updaters: { Component },
 
-	particleCount: number,
 	objectPool: ObjectPool,
 
     stepDelta: number,

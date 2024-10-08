@@ -75,7 +75,6 @@ function ParticleSystem.New(props: { [unknown]: unknown }): Types.ParticleSystem
 		initializers = {},
 		updaters = {},
 
-		particleCount = 0,
 		objectPool = ObjectPool.New(Mesh {}.particle),
 
 		stepDelta = 0,
