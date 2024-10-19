@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Ignis = require(ReplicatedStorage.Ignis) -- not sure how to fix this error
+local Ignis = require(ReplicatedStorage.Ignis) -- not sure how to fix this error (external edito)
 
 local ParticleSystem = Ignis.ParticleSystem
 local SetSpawner = Ignis.SetSpawner
@@ -26,15 +26,13 @@ local sys = ParticleSystem {
 	SetRenderer "Mesh" {},
 }
 
+task.wait(3)
 sys:Start()
-
--- task.wait(3)
--- _sys:Start()
--- task.wait(1)
--- _sys:Pause()
--- task.wait(1)
--- _sys:Unpause()
--- task.wait(1)
--- _sys:Stop()
--- task.wait(1)
--- _sys:Restart()
+task.wait(1)
+sys:Pause()
+task.wait(1)
+sys:Unpause()
+task.wait(1)
+sys:Stop()
+task.wait(1)
+sys:Restart()

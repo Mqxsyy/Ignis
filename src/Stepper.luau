@@ -59,6 +59,7 @@ local function StepSerial(): { PropsTableEntry }
 				particle = ObjectPool.GetItem(system.objectPool),
 				lifetime = 60,
 				aliveFrames = 0,
+				serialSystem = system,
 			}
 
 			if system.stepDelta > particleData.lifetime then
@@ -92,10 +93,10 @@ function Stepper.Run()
 
 	serialConenction = RunService.Heartbeat:Connect(function(dt)
 		for _, system: Types.ParticleSystem in Scheduler.SerialSystems do
-            if system.isPaused or not system.isEnabled then
-                system.stepDelta = 0
-                continue
-            end
+			if system.isPaused or not system.isEnabled then
+				system.stepDelta = 0
+				continue
+			end
 
 			system.runningTime += dt
 
@@ -131,6 +132,21 @@ function Stepper.Run()
 		workspace:BulkMoveTo(bulkMoveToParts, bulkMoveToCFrames)
 
 		if #Scheduler.SerialParticles == 0 then
+			local serialSystemsStopped = true
+
+			for _, system: Types.ParticleSystem in Scheduler.SerialSystems do
+				if system.isStopping == true then
+					continue
+				end
+
+				serialSystemsStopped = false
+				break
+			end
+
+			if not serialSystemsStopped then
+				return
+			end
+
 			if serialConenction then
 				serialConenction:Disconnect()
 				serialConenction = nil

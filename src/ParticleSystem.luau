@@ -36,8 +36,18 @@ local function Start(self: Types.ParticleSystem)
 end
 
 local function Pause(self: Types.ParticleSystem)
+	if RunService:IsServer() then
+		warn("Failed to pause particle system! Particle systems can only be used on the client!")
+		return
+	end
+
 	if not self.isEnabled then
-		warn("Failed to pause particle system! Particle system isn't running!")
+		warn("Failed to pause particle system! Particle system is not running!")
+		return
+	end
+
+	if self.isPaused then
+		warn("Failed to pause particle system! Particle system is already paused!")
 		return
 	end
 
@@ -45,7 +55,17 @@ local function Pause(self: Types.ParticleSystem)
 end
 
 local function Unpause(self: Types.ParticleSystem)
-	if self.isEnabled then
+	if RunService:IsServer() then
+		warn("Failed to unpause particle system! Particle systems can only be used on the client!")
+		return
+	end
+
+	if not self.isEnabled then
+		warn("Failed to unpause particle system! Particle system is not running!")
+		return
+	end
+
+	if not self.isPaused then
 		warn("Failed to unpause particle system! Particle system is not paused!")
 		return
 	end
@@ -54,6 +74,16 @@ local function Unpause(self: Types.ParticleSystem)
 end
 
 local function Stop(self: Types.ParticleSystem)
+	if RunService:IsServer() then
+		warn("Failed to stop particle system! Particle systems can only be used on the client!")
+		return
+	end
+
+	if self.isStopping then
+		warn("Failed to stop particle system! Particle system is already stopped!")
+		return
+	end
+
 	self.isStopping = true
 end
 
@@ -110,7 +140,7 @@ function ParticleSystem.New(props: { [unknown]: unknown }): Types.ParticleSystem
 	if self.runParallel then
 		-- insert into parallel table
 	else
-		table.insert(Scheduler.SerialSystems)
+		table.insert(Scheduler.SerialSystems, self)
 	end
 
 	return self
