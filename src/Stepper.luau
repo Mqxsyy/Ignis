@@ -52,7 +52,7 @@ local function StepSerial(): { PropsTableEntry }
 			continue
 		end
 
-		local newCount = system.spawner.CalculateSpawnCountOnFrame(system.spawner, system.currentStep)
+		local newCount = system.spawner.CalculateSpawnCountOnFrame(system.spawner, system.currentStep, system.stepDelta)
 
 		for _ = 1, newCount do
 			local particleData: Types.ParticleData = {

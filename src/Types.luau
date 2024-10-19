@@ -20,7 +20,7 @@ export type Node = {
 }
 
 export type Spawner = Node & {
-	CalculateSpawnCountOnFrame: (self: any, step: number) -> number,
+	CalculateSpawnCountOnFrame: (self: any, currentStep: number, stepDelta: number) -> number,
 }
 
 export type Component = Node & {
@@ -40,7 +40,7 @@ export type ParticleSystem = {
 
 	objectPool: ObjectPool,
 
-    stepDelta: number,
+	stepDelta: number,
 	currentStep: number,
 	runningTime: number,
 

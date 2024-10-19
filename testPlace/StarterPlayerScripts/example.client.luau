@@ -26,13 +26,13 @@ local sys = ParticleSystem {
 	SetRenderer "Mesh" {},
 }
 
-task.wait(3)
+-- task.wait(3)
 sys:Start()
-task.wait(1)
-sys:Pause()
-task.wait(1)
-sys:Unpause()
-task.wait(1)
-sys:Stop()
-task.wait(1)
-sys:Restart()
+-- task.wait(1)
+-- sys:Pause()
+-- task.wait(1)
+-- sys:Unpause()
+-- task.wait(1)
+-- sys:Stop()
+-- task.wait(1)
+-- sys:Restart()
