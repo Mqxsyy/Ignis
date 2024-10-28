@@ -5,6 +5,8 @@ local AddUpdater = require(script.ParticleSystemBuilder.AddUpdater)
 local SetRenderer = require(script.ParticleSystemBuilder.SetRenderer)
 local SetSpawner = require(script.ParticleSystemBuilder.SetSpawner)
 
+require(script.ParallelScheduler.ParallelScheduler)
+
 local Ignis = table.freeze({
 	ParticleSystem = ParticleSystem.New,
 

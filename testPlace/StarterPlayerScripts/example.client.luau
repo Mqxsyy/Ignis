@@ -27,7 +27,7 @@ local sys = ParticleSystem {
 }
 
 -- task.wait(3)
-sys:Start()
+-- sys:Start()
 -- task.wait(1)
 -- sys:Pause()
 -- task.wait(1)
