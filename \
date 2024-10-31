@@ -134,16 +134,11 @@ RunService.Heartbeat:Connect(function()
 	local bulkMoveToCFrames = {}
 
 	for i = #particles, 1, -1 do
-		local particle: Types.ParticleData = particles[i]
-		local tblName = `{ParallelScheduler.SystemsRegistryPrefix}{particle.systemWorkerIndex}`
-		local system = SharedTableRegistry:GetSharedTable(tblName)[particle.systemIndex]
+		local particle = particles[i]
+		local system =
+			SharedTableRegistry:GetSharedTable(`ignis_systems_{particle.systemWorkerId}`)[particle.systemIndex]
 
 		if particle.aliveFrames > particle.lifetime then
-			if not particle.particle then
-				warn("Ignis: particle basepart doesn't exist")
-				continue
-			end
-
 			ObjectPool.RemoveItem(system.objectPool, particle.particle)
 			table.insert(bulkMoveToParts, particle.particle)
 			table.insert(bulkMoveToCFrames, ObjectPool.standbyLocation)
@@ -153,16 +148,6 @@ RunService.Heartbeat:Connect(function()
 
 		if not particle.particle then
 			particle.particle = ObjectPool.GetItem(system.objectPool)
-		end
-
-		-- dump compiler
-		if not particle.particle then
-			continue
-		end
-
-		if particle.updates == nil then
-			warn("Ignis: empty update table")
-			continue
 		end
 
 		for k, v in particle.updates do
@@ -177,5 +162,5 @@ RunService.Heartbeat:Connect(function()
 	end
 
 	workspace:BulkMoveTo(bulkMoveToParts, bulkMoveToCFrames)
-	SharedTableRegistry:SetSharedTable(`{ParallelScheduler.ParticlesRegistryPrefix}{index}`, particles)
+	SharedTableRegistry:SetSharedTable(`ignis_particles_{index}`, particles)
 end)

@@ -8,7 +8,7 @@ export type ObjectPool = {
 }
 
 export type ParticleData = {
-	systemWorkerId: number,
+	systemWorkerIndex: number,
 	systemIndex: number,
 
 	particle: BasePart?,
