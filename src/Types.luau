@@ -8,11 +8,14 @@ export type ObjectPool = {
 }
 
 export type ParticleData = {
-	serialSystem: ParticleSystem?,
+	systemWorkerId: number,
+	systemIndex: number,
 
-	particle: BasePart,
+	particle: BasePart?,
 	lifetime: number, -- Frames
 	aliveFrames: number,
+
+	updates: { [string]: unknown } | nil,
 }
 
 export type Node = {
@@ -33,6 +36,8 @@ export type Renderer = Node & {
 
 export type ParticleSystem = {
 	runParallel: boolean,
+
+	systemId: number,
 
 	spawner: Spawner,
 	initializers: { Component },

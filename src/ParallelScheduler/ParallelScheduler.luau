@@ -2,18 +2,13 @@ local SharedTableRegistry = game:GetService("SharedTableRegistry")
 local Config = require(script.Parent.Parent.Config)
 
 type Self = {
-	Systems: SharedTable,
-	Particles: { SharedTable },
+	currentSystemIndex: number,
+	currentParticleIndex: number,
 }
 
-local self = {}
-
-self.Systems = SharedTable.new()
-self.Particles = {}
-
 for i = 1, Config.workers do
-	self.Particles[i] = SharedTable.new()
-	SharedTableRegistry:SetSharedTable(`ignis_particles_{i}`, self.Particles[i])
+	SharedTableRegistry:SetSharedTable(`ignis_systems_{i}`, {})
+	SharedTableRegistry:SetSharedTable(`ignis_particles_{i}`, {})
 
 	local actor = Instance.new("Actor")
 	actor.Name = i
@@ -24,5 +19,10 @@ for i = 1, Config.workers do
 
 	worker.Enabled = true
 end
+
+local self: Self = {
+	currentSystemIndex = 1,
+	currentParticleIndex = 1,
+}
 
 return self

@@ -3,8 +3,6 @@ local Enums = require(script.Parent.Enums)
 local Mesh = require(script.Parent.Nodes.Renderers.Mesh)
 local Constant = require(script.Parent.Nodes.Spawners.Constant)
 local ObjectPool = require(script.Parent.ObjectPool)
-local Scheduler = require(script.Parent.Scheduler)
-local Stepper = require(script.Parent.Stepper)
 local Types = require(script.Parent.Types)
 
 local ParticleSystem = {}
