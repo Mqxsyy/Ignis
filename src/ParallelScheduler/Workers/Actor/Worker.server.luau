@@ -1,13 +1,15 @@
 local RunService = game:GetService("RunService")
 local SharedTableRegistry = game:GetService("SharedTableRegistry")
-local ParallelScheduler = require(script.Parent.ParallelScheduler)
-local Config = require(script.Parent.Parent.Config)
-local ObjectPool = require(script.Parent.Parent.ObjectPool)
-local Types = require(script.Parent.Parent.Types)
+local ParallelScheduler = require(script.Parent.Parent.Parent.ParallelScheduler)
+local Config = require(script.Parent.Parent.Parent.Parent.Config)
+local NodeList = require(script.Parent.Parent.Parent.Parent.Nodes.NodeList)
+local ObjectPool = require(script.Parent.Parent.Parent.Parent.ObjectPool)
+local Types = require(script.Parent.Parent.Parent.Parent.Types)
+local ParticleContainer = require(script.Parent.Parent.Parent.ParticleContainer)
 
 local index = tonumber(script.Parent.Name)
 
-local function UpdateSystem(system: Types.ParticleSystem, dt: number)
+local function UpdateSystem(system: Types.ParticleSystemData, dt: number)
 	if system.isPaused or not system.isEnabled then
 		system.stepDelta = 0
 		return
@@ -26,17 +28,24 @@ local function UpdateSystem(system: Types.ParticleSystem, dt: number)
 	system.currentStep = currentstep
 end
 
-local function CreateNewParticles(system: Types.ParticleSystem, systemIndex: number): { Types.ParticleData }
-	local amount = system.spawner.CalculateSpawnCountOnFrame(system.spawner, system.currentStep, system.stepDelta)
+local function CreateNewParticles(system: Types.ParticleSystemData, systemIndex: number): { Types.ParticleData }
+	local amount = NodeList.GetNode(system.spawner.name)(system.currentStep, system.stepDelta, {})
+
 	local newParticles: { Types.ParticleData } = {}
 
 	for _ = 1, amount do
 		local particleData: Types.ParticleData = {
+			particleId = -1,
+
 			systemWorkerIndex = index,
 			systemIndex = systemIndex,
 
 			lifetime = 60,
-			aliveFrames = 0,
+			alivetime = 0,
+
+			props = {
+				position = ObjectPool.standbyLocation,
+			},
 		}
 
 		if system.stepDelta > particleData.lifetime then
@@ -45,11 +54,11 @@ local function CreateNewParticles(system: Types.ParticleSystem, systemIndex: num
 
 		local props = {}
 		for _, component in system.initializers do
-			component.Step(component, 0, particleData, props)
+			NodeList.GetNode(component.name)(system.stepDelta, particleData, props)
 		end
 
 		for _, component in system.updaters do
-			component.Step(component, system.stepDelta - 1, particleData, props)
+			NodeList.GetNode(component.name)(system.stepDelta, particleData, props)
 		end
 
 		particleData.updates = props
@@ -62,13 +71,13 @@ end
 -- Step systems & create new particles
 RunService.PreSimulation:ConnectParallel(function(dt)
 	local systemsShared = SharedTableRegistry:GetSharedTable(`{ParallelScheduler.SystemsRegistryPrefix}{index}`)
-	local systems = SharedTable.clone(systemsShared, true)
-
-	if #systems == 0 then
+	if SharedTable.size(systemsShared) == 0 then
 		return
 	end
 
-	for systemIndex, system: Types.ParticleSystem in systems do
+	local systems = SharedTable.clone(systemsShared, true)
+
+	for systemIndex, system: Types.ParticleSystemData in systems do
 		UpdateSystem(system, dt)
 
 		if system.isStopping or system.stepDelta == 0 then
@@ -96,9 +105,15 @@ end)
 -- Update all particles
 RunService.PostSimulation:ConnectParallel(function()
 	local particlesShared = SharedTableRegistry:GetSharedTable(`{ParallelScheduler.ParticlesRegistryPrefix}{index}`)
+	local particleCount = SharedTable.size(particlesShared)
+
+	if particleCount == 0 then
+		return
+	end
+
 	local particles = SharedTable.clone(particlesShared, true)
 
-	for i = #particles, 1, -1 do
+	for i = particleCount, 1, -1 do
 		local particle: Types.ParticleData = particles[i]
 		local tblName = `{ParallelScheduler.SystemsRegistryPrefix}{particle.systemWorkerIndex}`
 		local system = SharedTableRegistry:GetSharedTable(tblName)[particle.systemIndex]
@@ -107,9 +122,9 @@ RunService.PostSimulation:ConnectParallel(function()
 			continue
 		end
 
-		particle.aliveFrames += system.stepDelta
+		particle.alivetime += system.stepDelta
 
-		if particle.aliveFrames > particle.lifetime then
+		if particle.alivetime > particle.lifetime then
 			table.remove(particles, i)
 			continue
 		end
@@ -128,39 +143,63 @@ end)
 -- Apply updates to particles
 RunService.Heartbeat:Connect(function()
 	local particlesShared = SharedTableRegistry:GetSharedTable(`{ParallelScheduler.ParticlesRegistryPrefix}{index}`)
+	local particleCount = SharedTable.size(particlesShared)
+
+	if particleCount == 0 then
+		return
+	end
+
 	local particles = SharedTable.clone(particlesShared)
 
 	local bulkMoveToParts = {}
 	local bulkMoveToCFrames = {}
 
-	for i = #particles, 1, -1 do
-		local particle = particles[i]
-		local system =
-			SharedTableRegistry:GetSharedTable(`ignis_systems_{particle.systemWorkerId}`)[particle.systemIndex]
+	for i = particleCount, 1, -1 do
+		local particle: Types.ParticleData = particles[i]
+		local tblName = `{ParallelScheduler.SystemsRegistryPrefix}{particle.systemWorkerIndex}`
+		local system = SharedTableRegistry:GetSharedTable(tblName)[particle.systemIndex]
 
-		if particle.aliveFrames > particle.lifetime then
-			ObjectPool.RemoveItem(system.objectPool, particle.particle)
-			table.insert(bulkMoveToParts, particle.particle)
+		local part
+		if particle.particleId == -1 then
+			ParticleContainer.idTracker += 1
+			particle.particleId = ParticleContainer.idTracker
+
+			part = ObjectPool.GetItem(system.objectPool)
+			ParticleContainer.particles[particle.particleId] = part
+		else
+			part = ParticleContainer[particle.particleId]
+		end
+
+		if particle.alivetime > particle.lifetime then
+			ObjectPool.RemoveItem(system.objectPool, part)
+			table.insert(bulkMoveToParts, part)
 			table.insert(bulkMoveToCFrames, ObjectPool.standbyLocation)
 			table.remove(particles, i)
+
+			ParticleContainer[particle.particleId] = nil
 			continue
 		end
 
-		if not particle.particle then
-			particle.particle = ObjectPool.GetItem(system.objectPool)
+		if particle.updates == nil then
+			warn("Ignis: empty update table")
+			continue
 		end
 
 		for k, v in particle.updates do
 			if k == "CFrame" then
-				table.insert(bulkMoveToParts, particle.particle)
+				table.insert(bulkMoveToParts, part)
 				table.insert(bulkMoveToCFrames, v)
 				continue
 			end
 
-			particle.particle[k] = v
+			part[k] = v
+		end
+
+		for k, _ in particle.props do
+			particle.props[k] = particle[k]
 		end
 	end
 
 	workspace:BulkMoveTo(bulkMoveToParts, bulkMoveToCFrames)
-	SharedTableRegistry:SetSharedTable(`ignis_particles_{index}`, particles)
+	SharedTableRegistry:SetSharedTable(`{ParallelScheduler.ParticlesRegistryPrefix}{index}`, particles)
 end)

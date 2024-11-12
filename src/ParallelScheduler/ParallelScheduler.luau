@@ -8,14 +8,14 @@ local ParallelScheduler = {
 
 function ParallelScheduler.Init()
 	for i = 1, Config.workers do
-		SharedTableRegistry:SetSharedTable(`ignis_systems_{i}`, {})
-		SharedTableRegistry:SetSharedTable(`ignis_particles_{i}`, {})
+		SharedTableRegistry:SetSharedTable(`ignis_systems_{i}`, SharedTable.new())
+		SharedTableRegistry:SetSharedTable(`ignis_particles_{i}`, SharedTable.new())
 
 		local actor = Instance.new("Actor")
 		actor.Name = i
 		actor.Parent = script.Parent.Workers
 
-		local worker = script.Parent.Worker:Clone()
+		local worker = script.Parent.Workers.Actor.Worker:Clone()
 		worker.Parent = actor
 
 		worker.Enabled = true
@@ -23,7 +23,7 @@ function ParallelScheduler.Init()
 end
 
 local function GetNextIndex(tableName: string): number
-	local index, smallestSize = 1, 999
+	local index, smallestSize = 1, 1000000
 
 	for i = 1, Config.workers do
 		local tbl = SharedTableRegistry:GetSharedTable(`{tableName}{i}`)

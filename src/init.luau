@@ -1,19 +1,16 @@
 local Enums = require(script.Enums)
+local ParallelScheduler = require(script.ParallelScheduler.ParallelScheduler)
 local ParticleSystem = require(script.ParticleSystem)
-local AddInitializer = require(script.ParticleSystemBuilder.AddInitializer)
-local AddUpdater = require(script.ParticleSystemBuilder.AddUpdater)
-local SetRenderer = require(script.ParticleSystemBuilder.SetRenderer)
-local SetSpawner = require(script.ParticleSystemBuilder.SetSpawner)
 
-require(script.ParallelScheduler.ParallelScheduler)
+ParallelScheduler.Init()
 
 local Ignis = table.freeze({
 	ParticleSystem = ParticleSystem.New,
 
-	SetSpawner = SetSpawner,
-	AddInitializer = AddInitializer,
-	AddUpdater = AddUpdater,
-	SetRenderer = SetRenderer,
+	SetSpawner = ParticleSystem.AddNode(Enums.NodeType.Spawn),
+	AddInitializer = ParticleSystem.AddNode(Enums.NodeType.Initialize),
+	AddUpdater = ParticleSystem.AddNode(Enums.NodeType.Update),
+	SetRenderer = ParticleSystem.AddNode(Enums.NodeType.Render),
 
 	Enums = {
 		Method = Enums.Method,

@@ -1,8 +1,11 @@
 local Types = require(script.Parent.Types)
 
-local ObjectPool = {}
+local ObjectPool = {
+	standbyLocation = CFrame.new(0, 10000, 0),
+}
 
-ObjectPool.standbyLocation = CFrame.new(0, 10000, 0)
+local idTracker = 0
+local objectPools: { Types.ObjectPool } = {}
 
 local function CreateFolder()
 	local folder = Instance.new("Folder")
@@ -18,12 +21,21 @@ function ObjectPool.New(object: BasePart): Types.ObjectPool
 	local folder = CreateFolder()
 	object.Parent = folder
 
-	return {
+	idTracker += 1
+	local objectPool = {
+		id = idTracker,
 		object = object,
 		folder = folder,
 		activeItems = {},
 		standbyItems = {},
 	}
+
+	objectPools[objectPool.id] = objectPool
+	return objectPool
+end
+
+function ObjectPool.GetById(id: number): Types.ObjectPool
+	return objectPools[id]
 end
 
 function ObjectPool.OverrideObject(objectPool: Types.ObjectPool, object: BasePart)

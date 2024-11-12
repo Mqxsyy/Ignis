@@ -1,6 +1,5 @@
-local Enums = require(script.Parent.Enums)
-
 export type ObjectPool = {
+	id: number,
 	object: BasePart,
 	folder: Folder,
 	activeItems: { BasePart },
@@ -8,42 +7,28 @@ export type ObjectPool = {
 }
 
 export type ParticleData = {
+	particleId: number,
+
 	systemWorkerIndex: number,
 	systemIndex: number,
 
-	particle: BasePart?,
-	lifetime: number, -- Frames
-	aliveFrames: number,
+	lifetime: number, -- In frames
+	alivetime: number, -- In frames
 
-	updates: { [string]: unknown } | nil,
+	props: {
+		position: Vector3,
+	},
+	updates: {
+		position: Vector3?,
+	}?,
 }
 
-export type Node = {
-	nodeType: Enums.NodeType?,
-}
+export type ParticleSystemData = {
+	spawner: { name: string },
+	initializers: { { name: string } },
+	updaters: { { name: string } },
 
-export type Spawner = Node & {
-	CalculateSpawnCountOnFrame: (self: any, currentStep: number, stepDelta: number) -> number,
-}
-
-export type Component = Node & {
-	Step: (self: any, steps: number, particleData: ParticleData, props: {}) -> (),
-}
-
-export type Renderer = Node & {
-	particle: BasePart,
-}
-
-export type ParticleSystem = {
-	runParallel: boolean,
-
-	systemId: number,
-
-	spawner: Spawner,
-	initializers: { Component },
-	updaters: { Component },
-
-	objectPool: ObjectPool,
+	objectPoolId: number,
 
 	stepDelta: number,
 	currentStep: number,
@@ -52,12 +37,6 @@ export type ParticleSystem = {
 	isEnabled: boolean,
 	isStopping: boolean,
 	isPaused: boolean,
-
-	Start: (self: ParticleSystem) -> (),
-	Pause: (self: ParticleSystem) -> (),
-	Unpause: (self: ParticleSystem) -> (),
-	Stop: (self: ParticleSystem) -> (),
-	Restart: (self: ParticleSystem) -> (),
 }
 
 return nil

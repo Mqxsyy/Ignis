@@ -1,13 +1,14 @@
 local RunService = game:GetService("RunService")
+local SharedTableRegistry = game:GetService("SharedTableRegistry")
 local Enums = require(script.Parent.Enums)
-local Mesh = require(script.Parent.Nodes.Renderers.Mesh)
-local Constant = require(script.Parent.Nodes.Spawners.Constant)
+local NodeList = require(script.Parent.Nodes.NodeList)
 local ObjectPool = require(script.Parent.ObjectPool)
+local ParallelScheduler = require(script.Parent.ParallelScheduler.ParallelScheduler)
 local Types = require(script.Parent.Types)
 
 local ParticleSystem = {}
 
-local function Start(self: Types.ParticleSystem)
+local function Start(self: Types.ParticleSystemData)
 	if RunService:IsServer() then
 		warn("Failed to start particle system! Particle systems can only be used on the client!")
 		return
@@ -30,10 +31,9 @@ local function Start(self: Types.ParticleSystem)
 	end
 
 	self.isEnabled = true
-	Stepper.Run()
 end
 
-local function Pause(self: Types.ParticleSystem)
+local function Pause(self: Types.ParticleSystemData)
 	if RunService:IsServer() then
 		warn("Failed to pause particle system! Particle systems can only be used on the client!")
 		return
@@ -52,7 +52,7 @@ local function Pause(self: Types.ParticleSystem)
 	self.isPaused = true
 end
 
-local function Unpause(self: Types.ParticleSystem)
+local function Unpause(self: Types.ParticleSystemData)
 	if RunService:IsServer() then
 		warn("Failed to unpause particle system! Particle systems can only be used on the client!")
 		return
@@ -71,7 +71,7 @@ local function Unpause(self: Types.ParticleSystem)
 	self.isPaused = false
 end
 
-local function Stop(self: Types.ParticleSystem)
+local function Stop(self: Types.ParticleSystemData)
 	if RunService:IsServer() then
 		warn("Failed to stop particle system! Particle systems can only be used on the client!")
 		return
@@ -85,25 +85,20 @@ local function Stop(self: Types.ParticleSystem)
 	self.isStopping = true
 end
 
-local function Restart(self: Types.ParticleSystem)
+local function Restart(self: Types.ParticleSystemData)
 	self.runningTime = 0
 	self.currentStep = 0
 
 	Start(self)
 end
 
-local idTracker = 0
-function ParticleSystem.New(props: { [unknown]: unknown }): Types.ParticleSystem
-	idTracker += 1
-
-	local self: Types.ParticleSystem = {
-		runParallel = false,
-
-		spawner = Constant {},
+function ParticleSystem.New(nodes: { [unknown]: unknown })
+	local particleSystemData: Types.ParticleSystemData = {
+		spawner = { name = "Constant" },
 		initializers = {},
 		updaters = {},
 
-		objectPool = ObjectPool.New(Mesh {}.particle),
+		objectPoolId = -1,
 
 		stepDelta = 0,
 		currentStep = 0,
@@ -112,36 +107,59 @@ function ParticleSystem.New(props: { [unknown]: unknown }): Types.ParticleSystem
 		isEnabled = false,
 		isStopping = false,
 		isPaused = false,
-
-		Start = Start,
-		Pause = Pause,
-		Unpause = Unpause,
-		Stop = Stop,
-		Restart = Restart,
 	}
 
-	for _, prop in props do
-		if typeof(prop) == "table" then
-			if prop.nodeType == Enums.NodeType.Spawn then
-				self.spawner = prop
-			elseif prop.nodeType == Enums.NodeType.Initialize then
-				table.insert(self.initializers, prop)
-			elseif prop.nodeType == Enums.NodeType.Update then
-				table.insert(self.updaters, prop)
-			elseif prop.nodeType == Enums.NodeType.Render then
-				ObjectPool.Cleanup(self.objectPool)
-				ObjectPool.OverrideObject(self.objectPool, prop.particle)
+	for _, node in nodes do
+		if node.nodeType == Enums.NodeType.Spawn then
+			particleSystemData.spawner = node.data
+		elseif node.nodeType == Enums.NodeType.Initialize then
+			table.insert(particleSystemData.initializers, node.data)
+		elseif node.nodeType == Enums.NodeType.Update then
+			table.insert(particleSystemData.updaters, node.data)
+		elseif node.nodeType == Enums.NodeType.Render then
+			if particleSystemData.objectPoolId == -1 then
+				local renderNode = NodeList.GetNode(node.data.name)
+				local objectPool = ObjectPool.New(renderNode())
+				particleSystemData.objectPoolId = objectPool.id
+			else
+				local objectPool = ObjectPool.GetById(particleSystemData.objectPoolId)
+				local renderNode = NodeList.GetNode(node.data.name)
+				ObjectPool.Cleanup(objectPool)
+				ObjectPool.OverrideObject(objectPool, renderNode())
 			end
 		end
 	end
 
-	if self.runParallel then
-		-- insert into parallel table
-	else
-		table.insert(Scheduler.SerialSystems, self)
-	end
+	local systemWorkerId = ParallelScheduler.GetNextSystemWorkerIndex()
+	local tblName = `{ParallelScheduler.SystemsRegistryPrefix}{systemWorkerId}`
+	local systemsShared = SharedTableRegistry:GetSharedTable(tblName)
+	systemsShared[SharedTable.size(systemsShared) + 1] = particleSystemData
 
-	return self
+	return {
+		Start = function()
+			Start(particleSystemData)
+		end,
+		Pause = function()
+			Pause(particleSystemData)
+		end,
+		Unpause = function()
+			Unpause(particleSystemData)
+		end,
+		Stop = function()
+			Stop(particleSystemData)
+		end,
+		Restart = function()
+			Restart(particleSystemData)
+		end,
+	}
+end
+
+function ParticleSystem.AddNode(nodeType: Enums.NodeType)
+	return function(name: string)
+		return function(props: { unknown })
+			return { nodeType = nodeType, data = { name = name, props = props } }
+		end
+	end
 end
 
 return ParticleSystem

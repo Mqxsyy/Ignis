@@ -6,29 +6,20 @@ type Props = {
 	position: Vector3?,
 }
 
-type Self = Types.Component & {
-	method: Enums.Method,
-	position: Vector3,
-}
-
 local DEFAULT_METHOD = Enums.Method.SET
 local DEFAULT_POSITION = Vector3.zero
 
-return function(props: Props): Self
-	return {
-		method = props.method or DEFAULT_METHOD,
-		position = props.position or DEFAULT_POSITION,
+return function(steps: number, particleData: Types.ParticleData, props: Props)
+	local method = props.method or DEFAULT_METHOD
+	local position = props.position or DEFAULT_POSITION
 
-		Step = function(self: Self, steps: number, particleData: Types.ParticleData, props: {})
-			if self.method == Enums.Method.SET then
-				props["Position"] = self.position
-			elseif self.method == Enums.Method.UPDATE then
-				if props["Position"] then
-					props["Position"] += self.position * steps
-				else
-					props["Position"] = particleData.particle.Position + self.position * steps
-				end
-			end
-		end,
-	}
+	if method == Enums.Method.SET then
+		props["Position"] = position
+	elseif method == Enums.Method.UPDATE then
+		if props["Position"] then
+			props["Position"] += position * steps
+		else
+			props["Position"] = particleData.props.position + position * steps
+		end
+	end
 end
